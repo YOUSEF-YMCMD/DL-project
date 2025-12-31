@@ -14,8 +14,6 @@ st.set_page_config(
 st.title("🩺 Skin Cancer Detection System")
 st.write("CNN-based classification of skin lesions (Benign vs Malignant)")
 
-
-
 # ---------------- Load Model ----------------
 @st.cache_resource
 def load_model():
@@ -40,49 +38,58 @@ def preprocess_image(image):
 if uploaded_file is not None:
     image = Image.open(uploaded_file).convert("RGB")
 
-    # -------- Input Validation (5) --------
+    # -------- Input Validation (Resolution) --------
     if image.size[0] < 100 or image.size[1] < 100:
-        st.warning("⚠ Image resolution is too low. Please upload a clearer image.")
-    else:
-        col1, col2 = st.columns([1, 1])
+        st.warning("⚠ Image resolution is too low. Please upload a clearer skin image.")
+        st.stop()
 
-        # -------- Column 1: Image --------
-        with col1:
-            st.subheader("🖼 Uploaded Image")
-            st.image(image, caption="Skin Lesion", width=280)
+    col1, col2 = st.columns([1, 1])
 
-        # -------- Column 2: Analysis --------
-        with col2:
-            st.subheader("📊 Analysis Result")
+    # -------- Column 1: Image --------
+    with col1:
+        st.subheader("🖼 Uploaded Image")
+        st.image(image, caption="Skin Lesion", width=280)
 
-            if st.button("🔍 Analyze Image"):
-                with st.spinner("Analyzing image..."):
-                    img_array = preprocess_image(image)
-                    prob = model.predict(img_array)[0][0]
-                    percentage = prob * 100
+    # -------- Column 2: Analysis --------
+    with col2:
+        st.subheader("📊 Analysis Result")
 
-                # -------- Result Visualization (1 + 2) --------
-                st.metric(
-                    label="Probability of Malignancy",
-                    value=f"{percentage:.1f}%"
+        if st.button("🔍 Analyze Image"):
+            with st.spinner("Analyzing image..."):
+                img_array = preprocess_image(image)
+                prob = model.predict(img_array)[0][0]
+                percentage = prob * 100
+
+            # -------- Non-Skin Image Rejection --------
+            if percentage < 5 or percentage > 95:
+                st.warning(
+                    "❌ The uploaded image does not appear to be a valid skin lesion image.\n\n"
+                    "Please upload a clear skin lesion image only."
                 )
-                st.progress(int(percentage))
+                st.stop()
 
-                # -------- Decision & Explanation (2 + 4) --------
-                if prob > 0.5:
-                    st.error("🔴 **Malignant**")
-                    st.warning(
-                        "High-risk lesion detected. "
-                        "Further medical examination is strongly recommended."
-                    )
-                else:
-                    st.success("🟢 **Benign**")
-                    st.info(
-                        "Low-risk lesion detected. "
-                        "Regular monitoring is advised."
-                    )
+            # -------- Result Visualization --------
+            st.metric(
+                label="Probability of Malignancy",
+                value=f"{percentage:.1f}%"
+            )
+            st.progress(int(percentage))
 
-# ---------------- Footer (7 + 8) ----------------
+            # -------- Decision & Explanation --------
+            if prob > 0.5:
+                st.error("🔴 **Malignant**")
+                st.warning(
+                    "High-risk lesion detected. "
+                    "Further medical examination is strongly recommended."
+                )
+            else:
+                st.success("🟢 **Benign**")
+                st.info(
+                    "Low-risk lesion detected. "
+                    "Regular monitoring is advised."
+                )
+
+# ---------------- Footer ----------------
 st.markdown("---")
 st.caption(
     "Developed by Yousef Mohamed | CNN • TensorFlow • Streamlit  \n"
