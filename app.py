@@ -62,7 +62,7 @@ if uploaded_file is not None:
 
             # -------- Non-Skin Image Rejection --------
             # -------- Improved Non-Skin Check --------
-            if percentage > 99.2:
+            if percentage > 99.5:
                 st.warning(
                     "⚠ The uploaded image may not be a valid skin lesion image. "
                     "Please ensure the image is clear and focused on skin."
@@ -96,3 +96,4 @@ st.caption(
     "Developed by Yousef Mohamed | CNN • TensorFlow • Streamlit  \n"
     "Educational Use Only — Not a Medical Diagnosis Tool"
 )
+
