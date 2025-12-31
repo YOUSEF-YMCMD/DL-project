@@ -61,10 +61,11 @@ if uploaded_file is not None:
                 percentage = prob * 100
 
             # -------- Non-Skin Image Rejection --------
-            if percentage < 5 or percentage > 95:
+            # -------- Improved Non-Skin Check --------
+            if percentage > 99.2:
                 st.warning(
-                    "❌ The uploaded image does not appear to be a valid skin lesion image.\n\n"
-                    "Please upload a clear skin lesion image only."
+                    "⚠ The uploaded image may not be a valid skin lesion image. "
+                    "Please ensure the image is clear and focused on skin."
                 )
                 st.stop()
 
