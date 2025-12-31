@@ -2,6 +2,7 @@ import streamlit as st
 import tensorflow as tf
 import numpy as np
 from PIL import Image
+import cv2
 
 # ---------------- Page Config ----------------
 st.set_page_config(
@@ -34,13 +35,39 @@ def preprocess_image(image):
     img_array = np.expand_dims(img_array, axis=0)
     return img_array
 
+# ---------------- Skin Detection Function ----------------
+def is_skin_image(image, threshold=0.15):
+    img = np.array(image)
+
+    # Convert to YCrCb color space
+    ycrcb = cv2.cvtColor(img, cv2.COLOR_RGB2YCrCb)
+    _, cr, cb = cv2.split(ycrcb)
+
+    # Skin color range
+    skin_mask = np.logical_and.reduce((
+        cr >= 135, cr <= 180,
+        cb >= 85,  cb <= 135
+    ))
+
+    skin_ratio = np.sum(skin_mask) / skin_mask.size
+    return skin_ratio > threshold
+
 # ---------------- Main Logic ----------------
 if uploaded_file is not None:
     image = Image.open(uploaded_file).convert("RGB")
 
-    # -------- Input Validation (Resolution) --------
+    # -------- Resolution Check --------
     if image.size[0] < 100 or image.size[1] < 100:
-        st.warning("⚠ Image resolution is too low. Please upload a clearer skin image.")
+        st.error("❌ Image resolution is too low. Please upload a clearer skin image.")
+        st.stop()
+
+    # -------- Skin Validation (HARD STOP) --------
+    if not is_skin_image(image):
+        st.error(
+            "❌ Invalid Image\n\n"
+            "The uploaded image does not appear to be a skin image.\n"
+            "Please upload a clear skin lesion image only."
+        )
         st.stop()
 
     col1, col2 = st.columns([1, 1])
@@ -60,23 +87,14 @@ if uploaded_file is not None:
                 prob = model.predict(img_array)[0][0]
                 percentage = prob * 100
 
-            # -------- Non-Skin Image Rejection --------
-            # -------- Improved Non-Skin Check --------
-            if percentage > 99.5:
-                st.warning(
-                    "⚠ The uploaded image may not be a valid skin lesion image. "
-                    "Please ensure the image is clear and focused on skin."
-                )
-                st.stop()
-
-            # -------- Result Visualization --------
+            # -------- Visualization --------
             st.metric(
                 label="Probability of Malignancy",
                 value=f"{percentage:.1f}%"
             )
             st.progress(int(percentage))
 
-            # -------- Decision & Explanation --------
+            # -------- Final Decision --------
             if prob > 0.5:
                 st.error("🔴 **Malignant**")
                 st.warning(
@@ -93,7 +111,6 @@ if uploaded_file is not None:
 # ---------------- Footer ----------------
 st.markdown("---")
 st.caption(
-    "Developed by Yousef Mohamed | CNN • TensorFlow • Streamlit  \n"
+    "Developed by Yousef Mohamed | CNN • TensorFlow • Streamlit\n"
     "Educational Use Only — Not a Medical Diagnosis Tool"
 )
-
